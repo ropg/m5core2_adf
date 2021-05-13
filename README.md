@@ -38,18 +38,20 @@ idf.py flash monitor
 
 As you can see, examples that just play sound work out of the box. No need to change any source code, you're good to go. (The `CONFIG_` defines above make sure 'Custom Audio Board' is selected in ESP-ADF's 'Audio HAL' section of the config and that the I2C port is set up to talk to the Power Management IC.)
 
-### Microphone: different stream config
+### Microphone: different stream configuration
 
-To open an input stream, you must replace the `I2S_STREAM_CFG_DEFAULT()` generally used to open the stream with `I2S_STREAM_CFG_M5CORE2_MICROPHONE()`. If you repeat the process above with `esp-adf/examples/recorder/pipeline_wav_sdcard` and do this replacement in `app_main()`, it will also just work. (You'll need to insert a VFAT-formatted SD-card.)
+To open an input stream, you must replace the `I2S_STREAM_CFG_DEFAULT()` the examples generally use to open the stream with our `I2S_STREAM_CFG_M5CORE2_MICROPHONE()`.
+
+So if you do the same as above with `esp-adf/examples/recorder/pipeline_wav_sdcard` and do this replacement in `app_main()` before compiling, recording will also just work. (You'll need to insert a VFAT-formatted SD-card.)
 
 ### Full duplex: no
 
-The M5Core2 cannot do full-duplex audio. (See below for much more explanation.) So any code that keeps two I2S streams open at the same time – whether it actively uses them in a full-duplex fashion or not – needs to be modified to have only one open at a time.
+To the best of my knowledge, **the M5Core2 cannot do full-duplex audio.** (See below for much more explanation.) Any code that keeps two I2S streams open at the same time – whether it actively uses them in a full-duplex fashion or not – needs to be modified to have only one stream open at any time.
 
 &nbsp;
 
 
-## Working with esp-adf
+## Working with ESP-ADF
 
 ### Voice Recognition
 
@@ -135,6 +137,7 @@ esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num) {
     return ESP_OK;
 }
 ```
+([Issue](https://github.com/espressif/esp-adf/issues/618) filed.)
 
 #### Half-Duplex
 
@@ -143,6 +146,8 @@ The M5Core2 audio subsystem consists of an I2S microphone component and an I2S a
 #### Low-Level, DC-Bias, power-on excursion
 
 The microphone level is really low, to be usable the signal needs to be digitally multiplied. The microphone hardware, about 120 ms after the stream being opened, sends the level down about to about twice the maximal speech volume and then over the course of a second returns to swinging around zero again, even though a noticable negative DC-bias remains. In my `I2S_STREAM_CFG_M5CORE2_MICROPHONE` settings I have turned on ESP-ADF's native ALC (Automatic Level Control) to fix things. This makes things louder, including significant noise. I have expermented with not feeding the first second to ALC, but couldn't get enough improvement out of that to justify a mike-only special version of `i2s_stream`. Signal is a bit muffled because of the placement of the microphone on the extension board and the sound having to make its way to it. There is an equalizer audio component that can conceivably be used to fix the audio a bit more.
+
+> *You might want to have a look at this [video](https://www.youtube.com/watch?v=CwIWpBqa-nM) where 'atomic14' goes over the M5Core2 audio input in detail.*
 
 #### SD-Card SPI pins
 
@@ -159,4 +164,15 @@ There is no way to say this nicely: **they hardcoded the SPI pins to the SD-Card
 
 These are the same people that then offer a function `get_sdcard_intr_gpio` in the driver code to figure out the 'card present' GPIO pin. I have no clue what they were thinking. The easiest way to solve this would have been to add an `#ifndef PIN_NUM_MISO` around these pins, but that would mean modifying the ESP-ADF code. Which in turn means you can't just `git checkout` different versions, and it would also mean having an M5Core2 driver that doesn't 'just work', which was a major objective here.
 
-So I ended up duplicating the mount process for the SD-card in hacked versions of `sdcard.c` and `periph_sdcard.c` in the `sdcard_hack` directory of the `m5core2_adf` component. It all works, but a bit silly it is.
+So I ended up duplicating the mount process for the SD-card in hacked versions of `sdcard.c` and `periph_sdcard.c` in the `sdcard_hack` directory of the `m5core2_adf` component. It all works, but a bit silly it is. ([Issue](https://github.com/espressif/esp-adf/issues/617) filed.)
+
+
+&nbsp;
+
+&nbsp;
+
+#### Contribute
+
+> I you found the information here useful, please consider starring this repository on GitHub, so others can find it more easily.
+
+> Please submit as an issue any onformation that you feel is important for other M5Core2 users of ESP-ADF, and I will attempt to share it here.
