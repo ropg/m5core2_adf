@@ -175,4 +175,4 @@ So I ended up duplicating the mount process for the SD-card in hacked versions o
 
 > I you found the information here useful, please consider starring this repository on GitHub, so others can find it more easily.
 
-> Please submit as an issue any onformation that you feel is important for other M5Core2 users of ESP-ADF, and I will attempt to share it here.
+> Please feel free to share any useful information on using ESP-ADF with the M5Core2 device on this repository's [wiki](https://github.com/ropg/m5core2_adf/wiki).
